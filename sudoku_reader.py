@@ -3,6 +3,7 @@ from skimage import exposure
 import cv2
 import argparse
 from packages import imutils
+from packages import textutils
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-i', '--image', required=True, help="Image path")
@@ -60,17 +61,26 @@ for c in cnts:
   # and its width and height is in range
   # then we can assume that we have found sudoku block
   if (len(approx) == 4) and (w >= minBoxW and w <= maxBoxW) and (h >= minBoxH and h <= maxBoxH):
-    blocks.append([x,y])
+    blocks.append([x,y, w, h])
     count += 1
     # sudo = image[y:y + h, x:x + w]
     # name_crop = "crop" + str(count % 5)
     # cv2.imshow(name_crop, sudo)
-    cv2.putText(image, str(count), (x + 5, y + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,255,0), 2)
     # cv2.drawContours(image,[approx], 0, (0, 0, 255), 2)
-print len(blocks)
-print blocks
-cv2.drawContours(image, [screenCnt], -1, (0,255,0),3)
+font = cv2.FONT_HERSHEY_SIMPLEX
+font_scale = 1
+thickness = 2
+font_scale = textutils.getFontScaleinRect(str(9), blocks[0], font = font,
+  font_scale= font_scale, thickness= thickness)
 
+for index, block in enumerate(blocks):
+  x,y,w,h = block
+  text = str(index % 10)
+  center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
+    thickness = thickness)
+  cv2.putText(image, text, center_pos, font, font_scale, (0,255,0), thickness)
+
+cv2.drawContours(image, [screenCnt], -1, (0,255,0),3)
 # cv2.imshow("Mean Thresh", thresh)
 # cv2.imshow("Gray", gray)
 # cv2.imshow("edged detection", edged)
