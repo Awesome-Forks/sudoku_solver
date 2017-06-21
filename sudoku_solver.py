@@ -18,7 +18,7 @@ def main():
 
   # exit application if cannot blocks
   if blocks == False:
-    print 'Cannot read sudoku'
+    print('Cannot read sudoku')
     return
 
   rows = 'ABCDEFGHI'
@@ -30,8 +30,8 @@ def main():
       temp[r+c] = {}
       temp[r+c]['block'] = blocks[index]
       index += 1
-  print blocks
-  print '----------------------A1:', temp['B1']
+  print (blocks)
+  print ('----------------------A1:', temp['B1'])
   # Ex:  
   # 'A1': {block:[...], number: '1'}
 
@@ -47,10 +47,11 @@ def main():
     sudo = image[y:y + h, x:x + w]
     name_crop = "crop" + str(index % 10)
     cv2.imshow(name_crop, sudo)
-    text = str(index)
-    center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
-      thickness = thickness)
-    cv2.putText(image, text, center_pos, font, font_scale, (0,255,0), thickness)
+    cv2.imwrite("images/saved/" + name_crop + ".jpg", sudo)
+    # text = str(index)
+    # center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
+    #   thickness = thickness)
+    # cv2.putText(image, text, center_pos, font, font_scale, (0,255,0), thickness)
 
   cv2.imshow("Sudoku", image)
   cv2.waitKey(0)
