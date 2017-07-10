@@ -4,6 +4,7 @@ import argparse
 import cPickle
 import mahotas
 import cv2
+from packages import imutils
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-m", "--model", required = True, help = "path to where the model be stored")
@@ -18,8 +19,11 @@ hog = HOG(orientations = 18, pixelsPerCell = (10,10), cellsPerBlock=(1,1), trans
 
 print "Open image"
 image = cv2.imread(args["image"])
+print(image.shape[1])
+if image.shape[1] < 40:
+    image = imutils.resize(image, height=40)
+cv2.imshow('testing', image)
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
 blurred = cv2.GaussianBlur(gray, (5,5), 0)
 edged = cv2.Canny(blurred, 30, 150)
 (_, cnts,_) = cv2.findContours(edged.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -40,7 +44,7 @@ for (c, _) in cnts:
         thresh =  dataset.deskew(thresh, 20)
         thresh = dataset.center_extent(thresh, (20,20))
 
-        # cv2.imshow("Thresh", thresh)
+        cv2.imshow("Thresh", thresh)
 
         hist = hog.describe(thresh)
         digit = model.predict(hist)

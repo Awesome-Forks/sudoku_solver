@@ -2,8 +2,11 @@ import numpy as np
 import cv2
 import argparse
 from packages import imutils, textutils, board_reader
+import recognize
+import sudoku
 
 def main():
+  recognizer = recognize.Recognize()
   ap = argparse.ArgumentParser()
   ap.add_argument('-i', '--image', required=True, help="Image path")
 
@@ -21,19 +24,12 @@ def main():
     print('Cannot read sudoku')
     return
 
-  rows = 'ABCDEFGHI'
-  cols = '123456789'
-  index = 0
-  temp = {}
-  for c in cols:
-    for r in rows:
-      temp[r+c] = {}
-      temp[r+c]['block'] = blocks[index]
-      index += 1
-  print (blocks)
-  print ('----------------------A1:', temp['B1'])
-  # Ex:  
-  # 'A1': {block:[...], number: '1'}
+  sudokuer = sudoku.Sudoku(blocks, image)
+  sudoku_blocks = sudokuer.blocks
+  test_str = sudokuer.toString()
+  print(test_str)
+
+  result = sudokuer.result()
 
   font = cv2.FONT_HERSHEY_SIMPLEX
   font_scale = 1
@@ -41,17 +37,22 @@ def main():
   font_scale = textutils.getFontScaleinRect(str(9), blocks[0], font = font,
     font_scale= font_scale, thickness= thickness)
 
-  for index, block in enumerate(blocks):
-    x,y,w,h = block
+  if result == True or True:
+    for sudoku_block in sudoku_blocks.iteritems():
+      key, value = sudoku_block
+      block = value['block']
+      x,y,w,h = block
 
-    sudo = image[y:y + h, x:x + w]
-    name_crop = "crop" + str(index % 10)
-    cv2.imshow(name_crop, sudo)
-    cv2.imwrite("images/saved/" + name_crop + ".jpg", sudo)
-    # text = str(index)
-    # center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
-    #   thickness = thickness)
-    # cv2.putText(image, text, center_pos, font, font_scale, (0,255,0), thickness)
+      text = str(value['value'])
+      center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
+        thickness = thickness)
+      cv2.putText(image, text, center_pos, font, font_scale, (0,255,0), thickness)
+  else:
+    text = 'Cannot recognize'
+    block = (0,0,image.shape[1], image.shape[0])
+    center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
+        thickness = thickness)
+    cv2.putText(image, text, center_pos, font, font_scale, (0,0, 255), thickness)
 
   cv2.imshow("Sudoku", image)
   cv2.waitKey(0)

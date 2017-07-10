@@ -1,74 +1,122 @@
-import numpy as np
-import cv2
-import argparse
-from packages import imutils
+import recognize
 
-ap = argparse.ArgumentParser()
-ap.add_argument('-i', '--image', required=True, help="Image path")
-args = vars(ap.parse_args())
+digits = '123456789'
+rows = 'ABCDEFGHI'
+cols = digits
 
-image = cv2.imread(args["image"])
+def cross(A,B):
+    return [a + b for a in A for b in B]
 
-# reside the image
-image = imutils.resize(image, width=300)
+squares = cross(rows, cols)
 
-# init the color range(between the color set to white else to black)
-colorLower = np.array([0, 0, 0], dtype="uint8")
-colorUpper = np.array([250, 250, 250], dtype="uint8")
-gray = cv2.inRange(image, colorLower, colorUpper)
+unitlist = ([cross(rows, c) for c in cols] +
+            [cross(r, cols) for r in rows] +
+            [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')])
 
-#count tour
-(_,cnts, _) = cv2.findContours(gray.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-sort_cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
-sudoBlock = None
+units = dict((s, [u for u in unitlist if s in u]) for s in squares)
+peers = dict((s, set(sum(units[s],[]))-set([s])) for s in squares)
 
-index = 0
-blocks = []
-while True:
-  blocks = []
+class Sudoku:
+  def __init__(self, blocks, image):
+    self._initBlock(blocks, image)
 
-  if index == 0:
-    boxH, boxW = image.shape[:2]
-  else:
-    _,_,boxW, boxH = cv2.boundingRect(sort_cnts[index])
+  def _initBlock(self, blocks, image):
+    index = 0
+    self.blocks = {}
+    recognizer = recognize.Recognize()
+    for c in cols:
+      for r in rows:
+        self.blocks[r+c] = {}
+        self.blocks[r+c]['block'] = blocks[index]
+        x,y,w,h = blocks[index]
+        block_num = image[y+5:y + h-5, x+5:x + w-5]
+        num = recognizer.recognizing(block_num)
+        self.blocks[r+c]['value'] = num
+        index += 1
 
-  maxBoxH = (boxH / 9) + (boxH / 9 * 0.2)
-  minBoxH = (boxH / 9) - (boxH / 9 * 0.2)
-  maxBoxW = (boxW / 9) + (boxW / 9 * 0.2)
-  minBoxW = (boxW / 9) - (boxW / 9 * 0.2)
+  def toString(self):
+    test_str = ''
+    for r in rows:
+      for c in cols:
+        num = self.blocks[r+c]['value']
+        test_str += str(num)
+    return test_str
 
-  count = 0
-  # loop over our contours
-  for c in cnts:
-    # approximate the contour
-    peri = cv2.arcLength(c, True)
-    approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-    (x, y, w, h) = cv2.boundingRect(c)
+  def parse_grid(self, grid):
+    # Convert grid to a dict of possible values,{square: digits}, or
+    # return False if a contridiction is detected.
+    ## To start, every square can be any digit; then assign values from the grid.
+    values = dict((s, digits) for s in squares)
+    # print grid_values(grid).items()
+    for s, d in self.grid_values(grid).items():
+        if d in digits and not self.assign(values, s, d):
+            return False ## (Fail if we can't assign d to square s.)
+    return values
 
-    # if our approximated contour has four points,
-    # and its width and height is in range
-    # then we can assume that we have found sudoku block
-    if (len(approx) == 4) and (w >= minBoxW and w <= maxBoxW) and (h >= minBoxH and h <= maxBoxH):
-      blocks.append([x, y, w, h])
-      count += 1
-      # sudo = image[y:y + h, x:x + w]
-      # name_crop = "crop" + str(count % 5)
-      # cv2.imshow(name_crop, sudo)
-      cv2.putText(image, str(count), (x + 5, y + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,255,0), 2)
-      # cv2.drawContours(image,[approx], 0, (0, 0, 255), 2)
+  def grid_values(self, grid):
+    # "Convert grid into a dict of {square: char} with '0' or '.' for empties."
+    chars = [c for c in grid if c in digits or c in '0.']
+    assert len(chars) == 81
+    return dict(zip(squares, chars))
 
-  index += 1
+  def assign(self, values, s, d):
+    """Eliminate all the other values (except d) from values[s] and propagate.
+    Return values, except return False if a contradiction is detected."""
+    other_values = values[s].replace(d, '')
+    if all(self.eliminate(values, s, d2) for d2 in other_values):
+        return values
+    else:
+        return False
+  def eliminate(self, values, s, d):
+    """Eliminate d from values[s]; propagate when values or places <= 2.
+    Return values, except return False if a contradiction is detected."""
+    if d not in values[s]:
+        return values ## Already eliminated
+    values[s] = values[s].replace(d,'')
+    ## (1) If a square s is reduced to one value d2, then eliminate d2 from the peers.
+    if len(values[s]) == 0:
+        return False ## Contradiction: removed last value
+    elif len(values[s]) == 1:
+        d2 = values[s]
+        if not all(self.eliminate(values, s2, d2) for s2 in peers[s]):
+            return False
+    ## (2) If a unit u is reduced to only one place for a value d, then put it there.
+    for u in units[s]:
+        dplaces = [s for s in u if d in values[s]]
+    if len(dplaces) == 0:
+        return False ## Contradiction: no place for this value
+    elif len(dplaces) == 1:
+        # d can only be in one place in unit; assign it there
+        if not self.assign(values, dplaces[0], d):
+            return False
+    return values
 
-  # exit loop
-  if index >= 5 or len(blocks) == 81:
-    break
+  def search(self, values):
+    "Using depth-first search and propagation, try all possible values."
+    if values is False:
+        return False ## Failed earlier
+    if all(len(values[s]) == 1 for s in squares):
+        return values ## Solved!
+    ## Chose the unfilled square s with the fewest possibilities
+    n,s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
+    return self.some(search(self.assign(values.copy(), s, d))
+        for d in values[s])
 
-#order the block by its position
-blocks = sorted(blocks, reverse = True)
+  def some(self, seq):
+    "Return some element of seq that is true."
+    for e in seq:
+        if e: return e
+    return False
 
-# assign block to dict
-print len(blocks)
-print blocks
-cv2.drawContours(image, [sudoBlock], -1, (0,255,0),2)
-cv2.imshow("Sudoku", image)
-cv2.waitKey(0)
+  def result(self):
+    # "Display these values as a 2-D grid."
+    values = self.parse_grid(self.toString())
+    values = self.search(values)
+    if not values:
+        print('Cannot solve')
+        return False
+    for block in values.iteritems():
+      key, value = block
+      self.blocks[key]['value'] = value
+      print (self.blocks[key])
+    return True

@@ -5,7 +5,8 @@ import cv2
 
 def load_data(datasetPath):
   data = np.genfromtxt(datasetPath, delimiter = ",", dtype= "uint8")
-
+  # skip number 0
+  # data = data[data[:,0]!=0,:]
   target = data[:, 0]
   data = data[:, 1:].reshape(data.shape[0], 28, 28)
   # target = data[1:2, 0]
