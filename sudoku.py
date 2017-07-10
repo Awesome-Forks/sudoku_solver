@@ -99,7 +99,7 @@ class Sudoku:
         return values ## Solved!
     ## Chose the unfilled square s with the fewest possibilities
     n,s = min((len(values[s]), s) for s in squares if len(values[s]) > 1)
-    return self.some(search(self.assign(values.copy(), s, d))
+    return self.some(self.search(self.assign(values.copy(), s, d))
         for d in values[s])
 
   def some(self, seq):
@@ -118,5 +118,5 @@ class Sudoku:
     for block in values.iteritems():
       key, value = block
       self.blocks[key]['value'] = value
-      print (self.blocks[key])
+      # print (self.blocks[key])
     return True

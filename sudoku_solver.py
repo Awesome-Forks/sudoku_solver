@@ -47,8 +47,8 @@ def main():
       center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
         thickness = thickness)
       cv2.putText(image, text, center_pos, font, font_scale, (0,255,0), thickness)
-  else:
-    text = 'Cannot recognize'
+  if result == False:
+    text = 'Cannot solve'
     block = (0,0,image.shape[1], image.shape[0])
     center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
         thickness = thickness)
