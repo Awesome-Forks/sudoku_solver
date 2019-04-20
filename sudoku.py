@@ -32,6 +32,9 @@ class Sudoku:
         block_num = image[y+5:y + h-5, x+5:x + w-5]
         num = recognizer.recognizing(block_num)
         self.blocks[r+c]['value'] = num
+        self.blocks[r+c]['is_show'] = True
+        if num != 0:
+            self.blocks[r+c]['is_show'] = False
         index += 1
 
   def toString(self):
@@ -115,7 +118,7 @@ class Sudoku:
     if not values:
         print('Cannot solve')
         return False
-    for block in values.iteritems():
+    for block in values.items():
       key, value = block
       self.blocks[key]['value'] = value
       # print (self.blocks[key])

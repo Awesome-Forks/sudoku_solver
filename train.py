@@ -1,37 +1,43 @@
-from sklearn.svm import LinearSVC
-from packages.hog import HOG
-from packages import dataset
-import argparse
-import cPickle
 import numpy as np
+import cv2
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-d", "--dataset", required=True, help="path to the dataset file")
-ap.add_argument("-m", "--model", required=True, help="path tro where the model will be stored")
-args = vars(ap.parse_args())
+im = cv2.imread('images/sudoku_an.png')
+im = cv2.resize(im,(500,500))
+im3 = im.copy()
 
-(digits, target) = dataset.load_data(args["dataset"])
-# print digits
-print digits.shape
-print len(digits)
-print "------------------------------------------------------------------------"
-print target
-data = []
+gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+blur = cv2.GaussianBlur(gray,(5,5),0)
+thresh = cv2.adaptiveThreshold(blur,255,1,1,11,2)
 
-hog = HOG(orientations = 18, pixelsPerCell =(10, 10), cellsPerBlock = (1,1), transform_sqrt = True)
+#################      Now finding Contours         ###################
 
-for image in digits:
-    image = dataset.deskew(image, 20)
-    image = dataset.center_extent(image, (20, 20))
+_, contours,hierarchy = cv2.findContours(thresh,cv2.RETR_LIST,cv2.CHAIN_APPROX_SIMPLE)
 
-    hist = hog.describe(image)
-    data.append(hist)
-print "------------------------------------------------------------------------"
-print len(data)
-model = LinearSVC(random_state= 42)
-model.fit(data, target)
-print "------------------------------------------------------------------------"
-print model
-f = open(args["model"], "w")
-f.write(cPickle.dumps(model))
-f.close()
+samples =  np.empty((0,100))
+responses = []
+keys = [i for i in range(48,58)]
+
+for cnt in contours:
+    if cv2.contourArea(cnt)>50:
+        [x,y,w,h] = cv2.boundingRect(cnt)
+
+        if  h>28:
+            cv2.rectangle(im,(x,y),(x+w,y+h),(0,0,255),2)
+            roi = thresh[y:y+h,x:x+w]
+            roismall = cv2.resize(roi,(10,10))
+            cv2.imshow('norm',im)
+            key = cv2.waitKey(0)
+
+            if key == 27:  # (escape to quit)
+                sys.exit()
+            elif key in keys:
+                responses.append(int(chr(key)))
+                sample = roismall.reshape((1,100))
+                samples = np.append(samples,sample,0)
+
+responses = np.array(responses,np.float32)
+responses = responses.reshape((responses.size,1))
+print("training complete")
+
+np.savetxt('generalsamples.data',samples)
+np.savetxt('generalresponses.data',responses)

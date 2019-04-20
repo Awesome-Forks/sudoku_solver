@@ -14,4 +14,4 @@ def centerPosInRect(text, rect, font = cv2.FONT_HERSHEY_SIMPLEX, font_scale = 1,
   thickness = 2):
   size = cv2.getTextSize(text, font, font_scale, thickness)[0]
   x,y,w,h = rect
-  return (x + (w - size[0])/2, y + (h + size[1])/2)
+  return (x + int((w - size[0])/2), y + int((h + size[1])/2))
