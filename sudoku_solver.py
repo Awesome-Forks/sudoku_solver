@@ -17,6 +17,11 @@ def main():
   # get sudoku block
   blocks = board_reader.getSudoKublocks(image)
 
+  colorLower = np.array([0, 0, 0], dtype="uint8")
+  colorUpper = np.array([250, 250, 250], dtype="uint8")
+  gray = cv2.inRange(image, colorLower, colorUpper)
+  cv2.imshow('my gray', gray)
+
   # exit application if cannot blocks
   if blocks == False:
     print('Cannot read sudoku')
@@ -46,17 +51,17 @@ def main():
       count += 1
 
       text = str(value['value'])
-      # if value['is_show']:
-      if True:
+      if value['is_show']:
+      # if True:
         center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
           thickness = thickness)
-        cv2.putText(image, text, center_pos, font, font_scale, (0,0,255), thickness)
+        cv2.putText(image, text, center_pos, font, font_scale, (0,255,0), thickness)
   if result == False:
     text = 'Cannot solve'
     block = (0,0,image.shape[1], image.shape[0])
     center_pos = textutils.centerPosInRect(text, block, font = font, font_scale = font_scale,
         thickness = thickness)
-    cv2.putText(image, text, center_pos, font, font_scale, (0,0, 255), thickness)
+    cv2.putText(image, text, center_pos, font, font_scale, (0,0,255), thickness)
 
   cv2.imshow("Sudoku", image)
   cv2.waitKey(0)

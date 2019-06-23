@@ -4,7 +4,8 @@ import cv2
 def getSudoKublocks(image):
   # init the color range(between the color set to white else to black)
   colorLower = np.array([0, 0, 0], dtype="uint8")
-  colorUpper = np.array([250, 250, 250], dtype="uint8")
+  # colorUpper = np.array([250, 250, 250], dtype="uint8")
+  colorUpper = np.array([150, 150, 150], dtype="uint8")
   gray = cv2.inRange(image, colorLower, colorUpper)
 
   #count tour
@@ -46,13 +47,14 @@ def getSudoKublocks(image):
     index += 1
 
     # exit loop
-    if index >= 5 or len(blocks) == 81:
+    if index >= 5 or len(blocks) == 81 or len(sort_cnts) <= index:
       break
 
   #order the block by its position
   blocks = sorted(blocks, reverse = False)
+  print(len(blocks))
 
   if len(blocks) != 81:
     return False
   else:
-    return blocks
+    return sorted(blocks)
