@@ -14,3 +14,5 @@ this project about using opencv + machine learning to solve sudoku via real time
 - train `python train.py`
 - `source activate opencv`
 - `python sudoku_solver.py -i images/dataset-original.png`
+
+https://viblo.asia/p/sudoku-solver-with-open-cv-924lJLEbKPM
